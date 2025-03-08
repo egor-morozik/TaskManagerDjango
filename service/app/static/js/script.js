@@ -1,6 +1,5 @@
-// app/static/js/script.js
 document.addEventListener('DOMContentLoaded', () => {
-    // Анимация для задач
+
     const taskItems = document.querySelectorAll('.task-item');
     taskItems.forEach((item, index) => {
         setTimeout(() => {
@@ -8,13 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }, index * 100);
     });
 
-    // Анимация для форм логина и регистрации
     const fadeInElements = document.querySelectorAll('.fade-in');
     fadeInElements.forEach(element => {
         element.classList.add('visible');
     });
 
-    // Простая валидация формы (опционально)
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', (e) => {
