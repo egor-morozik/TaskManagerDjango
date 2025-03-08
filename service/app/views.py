@@ -1,7 +1,4 @@
-from django.shortcuts import render, redirect
-from .models import User
-
-# app/views.py
+from datetime import datetime
 from django.shortcuts import render, redirect
 from .models import User, Task
 from django.http import HttpResponseRedirect
@@ -61,14 +58,22 @@ def create_task(request):
         title = request.POST.get('title')
         description = request.POST.get('description')
         status = request.POST.get('status')
+        due_date_str = request.POST.get('due_date')
         user_id = request.session['user_id']
         user = User.objects.get(id=user_id)
         if not title:
             return render(request, 'create_task.html', {'error': 'Title is required', 'user': user})
+        ue_date = None
+        if due_date_str:
+            try:
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return render(request, 'create_task.html', {'error': 'Invalid date format. Use YYYY-MM-DD', 'user': user})
         Task.objects.create(
             title=title,
             description=description if description else '',
             status=status if status else 'TODO',
+            due_date=due_date,
             created_by=user
         )
         return redirect('app:tasks')

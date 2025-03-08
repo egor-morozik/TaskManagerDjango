@@ -33,6 +33,7 @@ class Task(models.Model):
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='TODO')
     created_at = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateField(blank=True, null=True, help_text="Date when the task should be completed")
     created_by = models.ForeignKey('User', on_delete=models.CASCADE, related_name='tasks')
 
     def __str__(self):
