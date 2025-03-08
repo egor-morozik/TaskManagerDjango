@@ -1,6 +1,18 @@
 from django.shortcuts import render, redirect
 from .models import User
 
+# app/views.py
+from django.shortcuts import render, redirect
+from .models import User, Task
+from django.http import HttpResponseRedirect
+
+def login_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if 'user_id' not in request.session:
+            return HttpResponseRedirect('/login/')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
 def register(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -9,7 +21,7 @@ def register(request):
             return render(request, 'register.html', {'error': 'Email and password are required'})
         try:
             User.objects.create_user(email=email, password=password)
-            return redirect('login')  
+            return redirect('app:login')
         except ValueError:
             return render(request, 'register.html', {'error': 'Email is required'})
         except:
@@ -24,7 +36,7 @@ def login_view(request):
             user = User.objects.get(email=email)
             if user.check_password(password):
                 request.session['user_id'] = user.id
-                return redirect('tasks')  
+                return redirect('app:tasks')
             else:
                 return render(request, 'login.html', {'error': 'Wrong password'})
         except User.DoesNotExist:
@@ -34,4 +46,32 @@ def login_view(request):
 def logout_view(request):
     if 'user_id' in request.session:
         del request.session['user_id']
-    return redirect('login')
+    return redirect('app:login')
+
+@login_required
+def tasks(request):
+    user_id = request.session['user_id']
+    user = User.objects.get(id=user_id)
+    tasks = user.tasks.all()
+    return render(request, 'tasks.html', {'tasks': tasks, 'user': user})
+
+@login_required
+def create_task(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        status = request.POST.get('status')
+        user_id = request.session['user_id']
+        user = User.objects.get(id=user_id)
+        if not title:
+            return render(request, 'create_task.html', {'error': 'Title is required', 'user': user})
+        Task.objects.create(
+            title=title,
+            description=description if description else '',
+            status=status if status else 'TODO',
+            created_by=user
+        )
+        return redirect('app:tasks')
+    user_id = request.session['user_id']
+    user = User.objects.get(id=user_id)
+    return render(request, 'create_task.html', {'user': user})

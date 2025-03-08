@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Register</title>
-</head>
-<body>
-    <h1>Register</h1>
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Register</h2>
     <form method="post">
         {% csrf_token %}
         <input type="email" name="email" placeholder="Email" required>
@@ -14,5 +11,4 @@
     {% if error %}
         <p style="color: red;">{{ error }}</p>
     {% endif %}
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,21 @@
+<!-- app/templates/base.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager</title>
+</head>
+<body>
+    <header>
+        <h1>Task Manager</h1>
+        {% if request.session.user_id %}
+            <p>Welcome, {{ user.email }}! <a href="{% url 'app:logout' %}">Logout</a></p>
+        {% else %}
+            <p><a href="{% url 'app:login' %}">Login</a> | <a href="{% url 'app:register' %}">Register</a></p>
+        {% endif %}
+    </header>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Create New Task</h2>
+    <a href="{% url 'app:tasks' %}">Back to Tasks</a>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="title" placeholder="Title" required>
+        <textarea name="description" placeholder="Description"></textarea>
+        <select name="status">
+            <option value="TODO">To Do</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="DONE">Done</option>
+        </select>
+        <button type="submit">Create Task</button>
+    </form>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+{% endblock %}

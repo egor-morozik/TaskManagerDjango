@@ -1,7 +1,11 @@
+# app/models.py
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 class UserManager(models.Manager):
     def create_user(self, email, password):
+        if not email:
+            raise ValueError(_('The Email field must be set'))
         user = self.model(email=email, password=password)
         user.save(using=self._db)
         return user
@@ -29,7 +33,7 @@ class Task(models.Model):
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='TODO')
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
+    created_by = models.ForeignKey('User', on_delete=models.CASCADE, related_name='tasks')
 
     def __str__(self):
         return self.title
