@@ -1,21 +1,34 @@
+<!-- app/templates/create_task.html -->
 {% extends 'base.html' %}
 
 {% block content %}
-    <h2>Create New Task</h2>
-    <a href="{% url 'app:tasks' %}">Back to Tasks</a>
-    <form method="post">
-        {% csrf_token %}
-        <input type="text" name="title" placeholder="Title" required>
-        <textarea name="description" placeholder="Description"></textarea>
-        <select name="status">
-            <option value="TODO">To Do</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="DONE">Done</option>
-        </select>
-        <input type="date" name="due_date" placeholder="Due Date">
-        <button type="submit">Create Task</button>
-    </form>
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h2 class="mb-4">Create New Task</h2>
+            <a href="{% url 'app:tasks' %}" class="btn btn-secondary mb-3">Back to Tasks</a>
+            <form method="post" class="p-4 border rounded bg-light">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <input type="text" name="title" class="form-control" placeholder="Title" required>
+                </div>
+                <div class="mb-3">
+                    <textarea name="description" class="form-control" placeholder="Description" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <select name="status" class="form-select">
+                        <option value="TODO">To Do</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="DONE">Done</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <input type="date" name="due_date" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">Create Task</button>
+            </form>
+            {% if error %}
+                <div class="alert alert-danger mt-3">{{ error }}</div>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}

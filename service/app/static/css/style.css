@@ -1,0 +1,84 @@
+/* app/static/css/styles.css */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+header {
+    background-color: #3498db;
+}
+
+.task-item {
+    transition: transform 0.3s ease, opacity 0.5s ease;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.task-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fade-in {
+    transition: opacity 0.5s ease;
+    opacity: 0;
+}
+
+.fade-in.visible {
+    opacity: 1;
+}
+
+footer {
+    background-color: #343a40;
+    color: white;
+}
+
+.btn-primary {
+    background-color: #3498db;
+    border-color: #3498db;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+    border-color: #c0392b;
+}
+
+.badge {
+    font-size: 0.9em;
+}
+
+.alert {
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.card {
+    border-radius: 10px;
+}
+
+.form-control, .form-select {
+    border-radius: 5px;
+    border-color: #ced4da;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}

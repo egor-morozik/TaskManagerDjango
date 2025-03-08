@@ -1,19 +1,28 @@
+<!-- app/templates/tasks.html -->
 {% extends 'base.html' %}
 
 {% block content %}
-    <h2>Your Tasks</h2>
-    <a href="{% url 'app:create_task' %}">Create New Task</a>
-    <ul>
-        {% for task in tasks %}
-            <li>
-                {{ task.title }} ({{ task.status }})<br>
-                {{ task.description }}<br>
-                Created at: {{ task.created_at }}
-                Due Date: {{ task.due_date|default:"Not set" }}<br>
-                <a href="{% url 'app:delete_task' task.id %}">Delete</a>
-            </li>
-        {% empty %}
-            <li>No tasks yet.</li>
-        {% endfor %}
-    </ul>
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Your Tasks</h2>
+            <a href="{% url 'app:create_task' %}" class="btn btn-primary mb-3">Create New Task</a>
+            <div class="list-group">
+                {% for task in tasks %}
+                    <a href="#" class="list-group-item list-group-item-action task-item" data-task-id="{{ task.id }}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ task.title }} <span class="badge bg-{% if task.status == 'DONE' %}success{% elif task.status == 'IN_PROGRESS' %}warning{% else %}secondary{% endif %}">{{ task.status }}</span></h5>
+                            <small>{{ task.created_at|date:"F d, Y" }}</small>
+                        </div>
+                        <p class="mb-1">{{ task.description }}</p>
+                        <small>Due Date: {{ task.due_date|default:"Not set" }}</small>
+                        <div class="mt-2">
+                            <a href="{% url 'app:delete_task' task.id %}" class="btn btn-danger btn-sm">Delete</a>
+                        </div>
+                    </a>
+                {% empty %}
+                    <div class="alert alert-info">No tasks yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 {% endblock %}
