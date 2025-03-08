@@ -75,3 +75,12 @@ def create_task(request):
     user_id = request.session['user_id']
     user = User.objects.get(id=user_id)
     return render(request, 'create_task.html', {'user': user})
+
+@login_required
+def delete_task(request, task_id):
+    try:
+        task = Task.objects.get(id=task_id, created_by_id=request.session['user_id'])
+        task.delete()
+        return redirect('app:tasks')
+    except Task.DoesNotExist:
+        return redirect('app:tasks')

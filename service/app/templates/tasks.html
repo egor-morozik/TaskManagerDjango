@@ -9,6 +9,7 @@
                 {{ task.title }} ({{ task.status }})<br>
                 {{ task.description }}<br>
                 Created at: {{ task.created_at }}
+                <a href="{% url 'app:delete_task' task.id %}">Delete</a>
             </li>
         {% empty %}
             <li>No tasks yet.</li>
