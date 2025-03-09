@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Task
 from datetime import datetime
 from .forms import RegistrationForm
+from django.http import JsonResponse
 
 @login_required
 def tasks(request):
@@ -61,3 +62,27 @@ def register(request):
 @login_required
 def profile(request):
     return render(request, 'profile.html', {'user': request.user})
+
+@login_required
+def update_task_status(request, task_id):
+    user = request.user
+    try:
+        task = Task.objects.get(id=task_id, created_by=user)
+        if request.method == 'POST':
+            new_status = request.POST.get('status') or request.body.decode('utf-8') and request.POST.get('status')
+            if not new_status:
+                try:
+                    import json
+                    data = json.loads(request.body)
+                    new_status = data.get('status')
+                except json.JSONDecodeError:
+                    return JsonResponse({'success': False, 'error': 'Invalid data'}, status=400)
+
+            if new_status in [choice[0] for choice in Task._meta.get_field('status').choices]:
+                task.status = new_status
+                task.save()
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+    except Task.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Task not found'}, status=404)
+    return render(request, 'update_task_status.html', {'task': task})
