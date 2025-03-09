@@ -14,7 +14,7 @@
         <div class="container d-flex justify-content-between align-items-center">
             <h1 class="h3 mb-0">Task Manager</h1>
             <nav>
-                {% if user %}
+                {% if user.is_authenticated %}
                     <span class="text-light me-3">Welcome, {{ user.email }}!</span>
                     <a href="{% url 'app:logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
                 {% else %}

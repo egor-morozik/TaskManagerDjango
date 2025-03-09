@@ -1,70 +1,18 @@
-# app/views.py
 from django.shortcuts import render, redirect
-from .models import User, Task
-from django.http import HttpResponseRedirect
+from django.contrib.auth.decorators import login_required
+from .models import Task
 from datetime import datetime
-
-def login_required(view_func):
-    def wrapper(request, *args, **kwargs):
-        if 'user_id' not in request.session:
-            return HttpResponseRedirect('/login/')
-        return view_func(request, *args, **kwargs)
-    return wrapper
-
-def register(request):
-    user = None
-    if request.session.get('user_id'):
-        user = User.objects.get(id=request.session['user_id'])
-    
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        if not email or not password:
-            return render(request, 'register.html', {'error': 'Email and password are required', 'user': user})
-        try:
-            User.objects.create_user(email=email, password=password)
-            return redirect('app:login')
-        except ValueError:
-            return render(request, 'register.html', {'error': 'Email is required', 'user': user})
-        except:
-            return render(request, 'register.html', {'error': 'This email is already taken', 'user': user})
-    return render(request, 'register.html', {'user': user})
-
-def login_view(request):
-    user = None
-    if request.session.get('user_id'):
-        user = User.objects.get(id=request.session['user_id'])
-    
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        try:
-            user = User.objects.get(email=email)
-            if user.check_password(password):
-                request.session['user_id'] = user.id
-                return redirect('app:tasks')
-            else:
-                return render(request, 'login.html', {'error': 'Wrong password', 'user': user})
-        except User.DoesNotExist:
-            return render(request, 'login.html', {'error': 'User not found', 'user': user})
-    return render(request, 'login.html', {'user': user})
-
-def logout_view(request):
-    if 'user_id' in request.session:
-        del request.session['user_id']
-    return redirect('app:login')
+from .forms import RegistrationForm
 
 @login_required
 def tasks(request):
-    user_id = request.session['user_id']
-    user = User.objects.get(id=user_id)
+    user = request.user
     tasks = user.tasks.all()
     return render(request, 'tasks.html', {'tasks': tasks, 'user': user})
 
 @login_required
 def create_task(request):
-    user_id = request.session['user_id']
-    user = User.objects.get(id=user_id)
+    user = request.user
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
@@ -92,11 +40,24 @@ def create_task(request):
 
 @login_required
 def delete_task(request, task_id):
-    user_id = request.session['user_id']
-    user = User.objects.get(id=user_id)
+    user = request.user
     try:
-        task = Task.objects.get(id=task_id, created_by_id=user_id)
+        task = Task.objects.get(id=task_id, created_by=user)
         task.delete()
         return redirect('app:tasks')
     except Task.DoesNotExist:
         return redirect('app:tasks')
+
+def register(request):
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('app:login')  # Изменено с 'login' на 'app:login'
+    else:
+        form = RegistrationForm()
+    return render(request, 'registration/register.html', {'form': form})
+
+@login_required
+def profile(request):
+    return render(request, 'profile.html', {'user': request.user})
