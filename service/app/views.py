@@ -17,7 +17,7 @@ def create_task(request):
         title = request.POST.get('title')
         description = request.POST.get('description')
         status = request.POST.get('status')
-        due_date_str = request.POST.get('due_date')  # Теперь может содержать время
+        due_date_str = request.POST.get('due_date')  
 
         if not title:
             return render(request, 'create_task.html', {'error': 'Title is required', 'user': user})
@@ -25,7 +25,7 @@ def create_task(request):
         due_date = None
         if due_date_str:
             try:
-                due_date = datetime.strptime(due_date_str, '%Y-%m-%d %H:%M')  # Формат: ГГГГ-ММ-ДД ЧЧ:ММ
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d %H:%M')  
             except ValueError:
                 return render(request, 'create_task.html', {'error': 'Invalid date/time format. Use YYYY-MM-DD HH:MM', 'user': user})
 

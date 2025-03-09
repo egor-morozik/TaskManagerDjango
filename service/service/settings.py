@@ -119,7 +119,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'app/static')]
-LOGIN_REDIRECT_URL = '/tasks/'  # Куда перенаправлять после логина
+LOGIN_REDIRECT_URL = '/tasks/'  
 LOGOUT_REDIRECT_URL = '/login/'
 
 # Default primary key field type
