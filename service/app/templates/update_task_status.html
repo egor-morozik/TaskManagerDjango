@@ -15,6 +15,10 @@
                                 <option value="DONE" {% if task.status == 'DONE' %}selected{% endif %}>Done</option>
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label for="due_date" class="form-label">Due Date and Time</label>
+                            <input type="datetime-local" name="due_date" id="due_date" class="form-control" value="{{ task.due_date|date:'Y-m-d\TH:i' }}">
+                        </div>
                         <button type="submit" class="btn btn-primary w-100">Update Status</button>
                     </form>
                     <p class="text-center mt-3">

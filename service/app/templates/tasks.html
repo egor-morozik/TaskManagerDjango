@@ -20,8 +20,8 @@
                                         <option value="DONE" {% if task.status == 'DONE' %}selected{% endif %}>Done</option>
                                     </select>
                                 </small><br>
-                                <small>Due: {{ task.due_date|default:"No due date" }}</small><br>
-                                <small>Created: {{ task.created_at }}</small>
+                                <small>Due: {% if task.due_date %}{{ task.due_date|date:"Y-m-d H:i" }}{% else %}No due date{% endif %}</small><br>
+                                <small>Created: {% if task.created_at %}{{ task.created_at|date:"Y-m-d H:i" }}{% else %}Unknown{% endif %}</small>
                             </div>
                             <div>
                                 <a href="{% url 'app:delete_task' task.id %}" class="btn btn-sm btn-danger">Delete</a>

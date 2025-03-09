@@ -1,33 +1,64 @@
 {% extends 'base.html' %}
-
 {% block content %}
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <h2 class="mb-4">Create New Task</h2>
-            <a href="{% url 'app:tasks' %}" class="btn btn-secondary mb-3">Back to Tasks</a>
-            <form method="post" class="p-4 border rounded bg-light">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <input type="text" name="title" class="form-control" placeholder="Title" required>
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm fade-in">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Create Task</h2>
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" name="title" id="title" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea name="description" id="description" class="form-control"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="TODO">To Do</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="DONE">Done</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="due_date" class="form-label">Due Date and Time</label>
+                            <div class="row">
+                                <div class="col">
+                                    <input type="date" name="due_date_date" id="due_date_date" class="form-control">
+                                </div>
+                                <div class="col">
+                                    <input type="time" name="due_date_time" id="due_date_time" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Create Task</button>
+                    </form>
+                    <p class="text-center mt-3">
+                        <a href="{% url 'app:tasks' %}">Back to Tasks</a>
+                    </p>
                 </div>
-                <div class="mb-3">
-                    <textarea name="description" class="form-control" placeholder="Description" rows="3"></textarea>
-                </div>
-                <div class="mb-3">
-                    <select name="status" class="form-select">
-                        <option value="TODO">To Do</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="DONE">Done</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <input type="date" name="due_date" class="form-control">
-                </div>
-                <button type="submit" class="btn btn-primary">Create Task</button>
-            </form>
-            {% if error %}
-                <div class="alert alert-danger mt-3">{{ error }}</div>
-            {% endif %}
+            </div>
         </div>
     </div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const dateInput = document.getElementById('due_date_date').value;
+            const timeInput = document.getElementById('due_date_time').value;
+            if (dateInput && timeInput) {
+                const dueDate = `${dateInput} ${timeInput}`;
+                const dueDateInput = document.createElement('input');
+                dueDateInput.type = 'hidden';
+                dueDateInput.name = 'due_date';
+                dueDateInput.value = dueDate;
+                this.appendChild(dueDateInput);
+            }
+        });
+    </script>
 {% endblock %}
