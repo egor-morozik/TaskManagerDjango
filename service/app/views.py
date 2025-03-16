@@ -1,9 +1,12 @@
-from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView
+from django.shortcuts import redirect
+from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView, RedirectView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Task
 from .forms import RegistrationForm
 from datetime import datetime
+from django.http import JsonResponse
+import json
 
 class TaskListView(LoginRequiredMixin, ListView):
     model = Task
@@ -49,21 +52,44 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
     model = Task
     success_url = reverse_lazy('app:tasks')
+    slug_field = 'slug'  
+    slug_url_kwarg = 'task_slug' 
+    template_name = 'task_confirm_delete.html'
 
     def get_queryset(self):
         return Task.objects.filter(created_by=self.request.user)
 
     def get(self, request, *args, **kwargs):
-        return redirect('app:tasks')
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 class TaskUpdateStatusView(LoginRequiredMixin, UpdateView):
     model = Task
     template_name = 'update_task_status.html'
     fields = ['status', 'due_date']
     success_url = reverse_lazy('app:tasks')
+    slug_field = 'slug'  
+    slug_url_kwarg = 'task_slug'  
 
     def get_queryset(self):
         return Task.objects.filter(created_by=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            data = json.loads(request.body)
+            new_status = data.get('status')
+
+            if new_status not in [choice[0] for choice in Task._meta.get_field('status').choices]:
+                return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+
+            self.object.status = new_status
+            self.object.save()
+            return JsonResponse({'success': True})
+
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         new_status = form.cleaned_data['status']
@@ -100,3 +126,11 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
         return context
+
+class RootRedirectView(RedirectView):
+    permanent = False
+
+    def get_redirect_url(self, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            return reverse_lazy('app:tasks')
+        return reverse_lazy('app:login')

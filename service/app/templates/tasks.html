@@ -14,7 +14,7 @@
                                 <h5 class="mb-1">{{ task.title }}</h5>
                                 <p class="mb-1">{{ task.description }}</p>
                                 <small>Status: 
-                                    <select class="task-status" data-task-id="{{ task.id }}">
+                                    <select class="task-status" data-task-slug="{{ task.slug }}">
                                         <option value="TODO" {% if task.status == 'TODO' %}selected{% endif %}>To Do</option>
                                         <option value="IN_PROGRESS" {% if task.status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
                                         <option value="DONE" {% if task.status == 'DONE' %}selected{% endif %}>Done</option>
@@ -24,7 +24,10 @@
                                 <small>Created: {% if task.created_at %}{{ task.created_at|date:"Y-m-d H:i" }}{% else %}Unknown{% endif %}</small>
                             </div>
                             <div>
-                                <a href="{% url 'app:delete_task' task.id %}" class="btn btn-sm btn-danger">Delete</a>
+                                <form method="post" action="{% url 'app:delete_task' task_slug=task.slug %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
                             </div>
                         </li>
                     {% endfor %}
@@ -38,10 +41,10 @@
     <script>
         document.querySelectorAll('.task-status').forEach(select => {
             select.addEventListener('change', function() {
-                const taskId = this.dataset.taskId;
+                const taskSlug = this.dataset.taskSlug;
                 const newStatus = this.value;
 
-                fetch(`/update-task-status/${taskId}/`, {
+                fetch(`/update-task-status/${taskSlug}/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

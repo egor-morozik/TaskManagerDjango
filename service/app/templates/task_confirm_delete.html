@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm fade-in">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Confirm Delete</h2>
+                    <p class="text-center">Are you sure you want to delete the task "{{ object.title }}"? This action cannot be undone.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger w-100">Yes, Delete</button>
+                    </form>
+                    <p class="text-center mt-3">
+                        <a href="{% url 'app:tasks' %}" class="btn btn-secondary">No, Cancel</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
