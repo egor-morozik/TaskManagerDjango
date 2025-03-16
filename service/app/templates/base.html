@@ -16,7 +16,10 @@
             <nav>
                 {% if user.is_authenticated %}
                     <span class="text-light me-3">Welcome, {{ user.email }}!</span>
-                    <a href="{% url 'app:logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
+                    <form method="post" action="{% url 'app:logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+                    </form>
                 {% else %}
                     <a href="{% url 'app:login' %}" class="btn btn-outline-light btn-sm me-2">Login</a>
                     <a href="{% url 'app:register' %}" class="btn btn-light btn-sm">Register</a>

@@ -1,86 +1,102 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Task
-from datetime import datetime
 from .forms import RegistrationForm
+from datetime import datetime
 
-@login_required
-def tasks(request):
-    user = request.user
-    tasks = user.tasks.all()
-    return render(request, 'tasks.html', {'tasks': tasks, 'user': user})
+class TaskListView(LoginRequiredMixin, ListView):
+    model = Task
+    template_name = 'tasks.html'
+    context_object_name = 'tasks'
 
-@login_required
-def create_task(request):
-    user = request.user
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        status = request.POST.get('status')
-        due_date_str = request.POST.get('due_date')  
+    def get_queryset(self):
+        return self.request.user.tasks.all()
 
-        if not title:
-            return render(request, 'create_task.html', {'error': 'Title is required', 'user': user})
-        
-        due_date = None
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
+
+class TaskCreateView(LoginRequiredMixin, CreateView):
+    model = Task
+    template_name = 'create_task.html'
+    fields = ['title', 'description', 'status', 'due_date']
+    success_url = reverse_lazy('app:tasks')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        if not form.instance.title:
+            form.add_error('title', 'Title is required')
+            return self.form_invalid(form)
+        due_date_str = self.request.POST.get('due_date')
         if due_date_str:
             try:
-                due_date = datetime.strptime(due_date_str, '%Y-%m-%d %H:%M')  
+                form.instance.due_date = datetime.strptime(due_date_str, '%Y-%m-%d %H:%M')
             except ValueError:
-                return render(request, 'create_task.html', {'error': 'Invalid date/time format. Use YYYY-MM-DD HH:MM', 'user': user})
+                form.add_error('due_date', 'Invalid date/time format. Use YYYY-MM-DD HH:MM')
+                return self.form_invalid(form)
+        return super().form_valid(form)
 
-        Task.objects.create(
-            title=title,
-            description=description if description else '',
-            status=status if status else 'TODO',
-            due_date=due_date,
-            created_by=user
-        )
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form, user=self.request.user))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
+
+class TaskDeleteView(LoginRequiredMixin, DeleteView):
+    model = Task
+    success_url = reverse_lazy('app:tasks')
+
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)
+
+    def get(self, request, *args, **kwargs):
         return redirect('app:tasks')
-    return render(request, 'create_task.html', {'user': user})
 
-@login_required
-def delete_task(request, task_id):
-    user = request.user
-    try:
-        task = Task.objects.get(id=task_id, created_by=user)
-        task.delete()
-        return redirect('app:tasks')
-    except Task.DoesNotExist:
-        return redirect('app:tasks')
+class TaskUpdateStatusView(LoginRequiredMixin, UpdateView):
+    model = Task
+    template_name = 'update_task_status.html'
+    fields = ['status', 'due_date']
+    success_url = reverse_lazy('app:tasks')
 
-@login_required
-def update_task_status(request, task_id):
-    user = request.user
-    try:
-        task = Task.objects.get(id=task_id, created_by=user)
-        if request.method == 'POST':
-            new_status = request.POST.get('status')
-            due_date_str = request.POST.get('due_date')
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)
 
-            if new_status in [choice[0] for choice in Task._meta.get_field('status').choices]:
-                task.status = new_status
-                if due_date_str:
-                    try:
-                        task.due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
-                    except ValueError:
-                        return render(request, 'update_task_status.html', {'task': task, 'error': 'Invalid date/time format'})
-                task.save()
-            return redirect('app:tasks')
-    except Task.DoesNotExist:
-        return redirect('app:tasks')
-    return render(request, 'update_task_status.html', {'task': task})
+    def form_valid(self, form):
+        new_status = form.cleaned_data['status']
+        if new_status not in [choice[0] for choice in Task._meta.get_field('status').choices]:
+            form.add_error('status', 'Invalid status')
+            return self.form_invalid(form)
+        due_date_str = self.request.POST.get('due_date')
+        if due_date_str:
+            try:
+                form.instance.due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                form.add_error('due_date', 'Invalid date/time format')
+                return self.form_invalid(form)
+        return super().form_valid(form)
 
-def register(request):
-    if request.method == 'POST':
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('app:login')
-    else:
-        form = RegistrationForm()
-    return render(request, 'registration/register.html', {'form': form})
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['task'] = self.get_object()
+        return context
 
-@login_required
-def profile(request):
-    return render(request, 'profile.html', {'user': request.user})
+class RegisterView(FormView):
+    template_name = 'registration/register.html'
+    form_class = RegistrationForm
+    success_url = reverse_lazy('app:login')
+
+    def form_valid(self, form):
+        form.save()
+        return super().form_valid(form)
+
+class ProfileView(LoginRequiredMixin, TemplateView):
+    template_name = 'profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
