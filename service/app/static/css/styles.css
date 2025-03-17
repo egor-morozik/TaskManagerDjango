@@ -96,3 +96,46 @@ header {
 .mark-complete[data-status="IN_PROGRESS"] {
     background-color: #28a745; 
 }
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.form-control, .form-select {
+    border-radius: 5px;
+    border-color: #ced4da;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+#custom-date-container {
+    transition: opacity 0.3s ease-in-out;
+}
+
+#custom-date-container:empty {
+    opacity: 0;
+    height: 0;
+}
+
+#custom-date-container:not(:empty) {
+    opacity: 1;
+    height: auto;
+}

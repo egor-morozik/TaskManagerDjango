@@ -12,15 +12,38 @@ class TaskListView(LoginRequiredMixin, ListView):
     model = Task
     template_name = 'tasks.html'
     context_object_name = 'tasks'
+    paginate_by = 5
 
     def get_queryset(self):
-        return self.request.user.tasks.all()
+        queryset = self.request.user.tasks.all()
+
+        sort_by = self.request.GET.get('sort_by', 'due_date')
+        sort_order = self.request.GET.get('sort_order', 'asc')
+        search_title = self.request.GET.get('search_title', '').strip()
+        search_date = self.request.GET.get('search_date', 'all')
+
+        if search_title:
+            queryset = queryset.filter(title__icontains=search_title)
+
+        if search_date != 'all':
+            try:
+                search_date_obj = datetime.strptime(search_date, '%Y-%m-%d').date()
+                queryset = queryset.filter(due_date__date=search_date_obj)
+            except ValueError:
+                pass
+
+        if sort_by == 'title':
+            queryset = queryset.order_by('title' if sort_order == 'asc' else '-title')
+        elif sort_by == 'due_date':
+            queryset = queryset.order_by('due_date' if sort_order == 'asc' else '-due_date')
+
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
         tasks = self.get_queryset()
-        paginator = Paginator(tasks, 5)  
+        paginator = Paginator(tasks, self.paginate_by)
         page = self.request.GET.get('page')
         try:
             tasks_paginated = paginator.page(page)
@@ -31,6 +54,14 @@ class TaskListView(LoginRequiredMixin, ListView):
         context['tasks'] = tasks_paginated
         context['paginator'] = paginator
         context['page_obj'] = tasks_paginated
+
+        context['sort_by'] = self.request.GET.get('sort_by', 'due_date')
+        context['sort_order'] = self.request.GET.get('sort_order', 'asc')
+        context['search_title'] = self.request.GET.get('search_title', '')
+        context['search_date'] = self.request.GET.get('search_date', 'all')
+        
+        context['current_date'] = datetime.now().date()
+
         return context
 
 class TaskCreateView(LoginRequiredMixin, CreateView):

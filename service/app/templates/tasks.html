@@ -6,59 +6,94 @@
                 <h2>My Tasks</h2>
                 <a href="{% url 'app:create_task' %}" class="btn btn-primary">Create Task</a>
             </div>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="sort_by" class="form-label">Sort by:</label>
+                            <select name="sort_by" id="sort_by" class="form-select" onchange="this.form.submit()">
+                                <option value="due_date" {% if sort_by == 'due_date' %}selected{% endif %}>Due Date</option>
+                                <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search_title" class="form-label">Search by Title:</label>
+                            <input type="text" name="search_title" id="search_title" class="form-control" value="{{ search_title }}" placeholder="Enter title..." onchange="this.form.submit()">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search_date" class="form-label">Search by Date:</label>
+                            <select name="search_date" id="search_date" class="form-select" onchange="this.form.submit()">
+                                <option value="all" {% if search_date == 'all' %}selected{% endif %}>All</option>
+                                <option value="{{ current_date|date:'Y-m-d' }}" {% if search_date == current_date|date:'Y-m-d' %}selected{% endif %}>Today</option>
+                                <option value="custom" {% if search_date != 'all' and search_date != current_date|date:'Y-m-d' %}selected{% endif %}>Custom Date</option>
+                            </select>
+                            <div id="custom-date-container" class="mt-2"></div> <!-- Контейнер для поля даты -->
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="button" class="btn btn-secondary" id="toggle-sort-order">Toggle Sort Order ({{ sort_order|upper }})</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             {% if tasks %}
                 <ul class="list-group">
                     {% for task in tasks %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center task-item">
-                            <div class="task-content {% if task.status == 'DONE' %}task-done{% endif %}">
-                                <h5 class="mb-1 {% if task.status == 'DONE' %}task-title-done{% endif %}">{{ task.title }}</h5>
-                                <p class="mb-1 {% if task.status == 'DONE' %}task-description-done{% endif %}">
-                                    {{ task.description|truncatewords:20|default:"No description" }}
-                                    {% if task.description|wordcount > 20 %}
-                                        <a href="{% url 'app:task_detail' task_slug=task.slug %}" class="text-primary">... Read more</a>
-                                    {% endif %}
-                                </p>
-                                <button class="mark-complete btn btn-sm btn-success" data-task-slug="{{ task.slug }}" data-status="{{ task.status }}">✔</button>
-                                <br>
-                                <small>Due: {% if task.due_date %}{{ task.due_date|date:"Y-m-d H:i" }}{% else %}No due date{% endif %}</small><br>
-                                <small>Created: {% if task.created_at %}{{ task.created_at|date:"Y-m-d H:i" }}{% else %}Unknown{% endif %}</small>
-                            </div>
-                            <div>
-                                <form method="post" action="{% url 'app:delete_task' task_slug=task.slug %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                </form>
-                                <a href="{% url 'app:task_detail' task_slug=task.slug %}" class="btn btn-info btn-sm">View Details</a>
-                                <a href="{% url 'app:task_update' task_slug=task.slug %}" class="btn btn-warning btn-sm">Edit</a>
-                            </div>
-                        </li>
+                        {% if task.slug %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center task-item">
+                                <div class="task-content {% if task.status == 'DONE' %}task-done{% endif %}">
+                                    <h5 class="mb-1 {% if task.status == 'DONE' %}task-title-done{% endif %}">{{ task.title }}</h5>
+                                    <p class="mb-1 {% if task.status == 'DONE' %}task-description-done{% endif %}">
+                                        {{ task.description|truncatewords:20|default:"No description" }}
+                                        {% if task.description|wordcount > 20 %}
+                                            <a href="{% url 'app:task_detail' task_slug=task.slug %}" class="text-primary">... Read more</a>
+                                        {% endif %}
+                                    </p>
+                                    <button class="mark-complete btn btn-sm btn-success" data-task-slug="{{ task.slug }}" data-status="{{ task.status }}">✔</button>
+                                    <br>
+                                    <small>Due: {% if task.due_date %}{{ task.due_date|date:"Y-m-d H:i" }}{% else %}No due date{% endif %}</small><br>
+                                    <small>Created: {% if task.created_at %}{{ task.created_at|date:"Y-m-d H:i" }}{% else %}Unknown{% endif %}</small>
+                                </div>
+                                <div>
+                                    <form method="post" action="{% url 'app:delete_task' task_slug=task.slug %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                    <a href="{% url 'app:task_detail' task_slug=task.slug %}" class="btn btn-info btn-sm">View Details</a>
+                                    <a href="{% url 'app:task_update' task_slug=task.slug %}" class="btn btn-warning btn-sm">Edit</a>
+                                </div>
+                            </li>
+                        {% else %}
+                            <li class="list-group-item text-danger">Task with ID {{ task.id }} has no valid slug. Please update it.</li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
 
+                <!-- Пагинация -->
                 {% if paginator.num_pages > 1 %}
                     <nav aria-label="Page navigation">
                         <ul class="pagination justify-content-center mt-4">
                             {% if page_obj.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page=1">&laquo; First</a>
+                                    <a class="page-link" href="?page=1{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}{% if search_title %}&search_title={{ search_title|urlencode }}{% endif %}{% if search_date %}&search_date={{ search_date }}{% endif %}">« First</a>
                                 </li>
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}{% if search_title %}&search_title={{ search_title|urlencode }}{% endif %}{% if search_date %}&search_date={{ search_date }}{% endif %}">Previous</a>
                                 </li>
                             {% endif %}
 
                             {% for num in paginator.page_range %}
                                 <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    <a class="page-link" href="?page={{ num }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}{% if search_title %}&search_title={{ search_title|urlencode }}{% endif %}{% if search_date %}&search_date={{ search_date }}{% endif %}">{{ num }}</a>
                                 </li>
                             {% endfor %}
 
                             {% if page_obj.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}{% if search_title %}&search_title={{ search_title|urlencode }}{% endif %}{% if search_date %}&search_date={{ search_date }}{% endif %}">Next</a>
                                 </li>
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ paginator.num_pages }}">Last &raquo;</a>
+                                    <a class="page-link" href="?page={{ paginator.num_pages }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if sort_order %}&sort_order={{ sort_order }}{% endif %}{% if search_title %}&search_title={{ search_title|urlencode }}{% endif %}{% if search_date %}&search_date={{ search_date }}{% endif %}">Last »</a>
                                 </li>
                             {% endif %}
                         </ul>
@@ -144,6 +179,41 @@
                         alert('Error: ' + error);
                     });
                 });
+            });
+
+            const toggleSortOrderBtn = document.getElementById('toggle-sort-order');
+            if (toggleSortOrderBtn) {
+                toggleSortOrderBtn.addEventListener('click', () => {
+                    const currentOrder = '{{ sort_order }}';
+                    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+                    window.location.href = `?page={{ page_obj.number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}&sort_order=${newOrder}{% if search_title %}&search_title={{ search_title|urlencode }}{% endif %}{% if search_date %}&search_date={{ search_date }}{% endif %}`;
+                });
+            }
+
+            const searchDateSelect = document.getElementById('search_date');
+            const customDateContainer = document.getElementById('custom-date-container');
+
+            const showDateInput = (value) => {
+                customDateContainer.innerHTML = '';
+                if (value === 'custom') {
+                    const dateInput = document.createElement('input');
+                    dateInput.type = 'date';
+                    dateInput.name = 'search_date';
+                    dateInput.className = 'form-control';
+                    dateInput.value = '{{ current_date|date:"Y-m-d" }}'; 
+                    dateInput.onchange = () => searchDateSelect.form.submit();
+                    customDateContainer.appendChild(dateInput);
+                } else {
+                    searchDateSelect.form.submit();
+                }
+            };
+
+            if (searchDateSelect.value === 'custom') {
+                showDateInput('custom');
+            }
+
+            searchDateSelect.addEventListener('change', function() {
+                showDateInput(this.value);
             });
         });
     </script>

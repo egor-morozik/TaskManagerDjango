@@ -22,4 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const clearFiltersBtn = document.getElementById('clear-filters');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            window.location.href = '?sort_by=due_date&sort_order=asc'; // Сбрасываем на значения по умолчанию
+        });
+    }
 });
+
