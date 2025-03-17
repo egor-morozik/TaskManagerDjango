@@ -1,9 +1,8 @@
-from django.shortcuts import redirect
-from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView, RedirectView, DetailView
+from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView, DetailView, RedirectView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Task
-from .forms import RegistrationForm
+from .forms import RegistrationForm, TaskForm  
 from datetime import datetime
 from django.http import JsonResponse
 import json
@@ -23,37 +22,39 @@ class TaskListView(LoginRequiredMixin, ListView):
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
     model = Task
+    form_class = TaskForm
     template_name = 'create_task.html'
-    fields = ['title', 'description', 'status', 'due_date']
     success_url = reverse_lazy('app:tasks')
+
+    def post(self, request, *args, **kwargs):
+        print(f"Raw POST data (Create): {request.POST}")
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        if not form.instance.title:
+        if not form.cleaned_data['title']:
             form.add_error('title', 'Title is required')
             return self.form_invalid(form)
-        due_date_str = self.request.POST.get('due_date')
-        if due_date_str:
-            try:
-                form.instance.due_date = datetime.strptime(due_date_str, '%Y-%m-%d %H:%M')
-            except ValueError:
-                form.add_error('due_date', 'Invalid date/time format. Use YYYY-MM-DD HH:MM')
-                return self.form_invalid(form)
+        print(f"Form cleaned_data (Create): {form.cleaned_data}")
+        task = form.save(commit=False)
+        due_date = form.cleaned_data.get('due_date')
+        if due_date:
+            task.due_date = due_date
+        print(f"Task due_date before save (Create): {task.due_date}")
+        task.save()
+        print(f"Task due_date after save (Create): {task.due_date}")
         return super().form_valid(form)
-
-    def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form, user=self.request.user))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
         return context
-
+    
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
     model = Task
     success_url = reverse_lazy('app:tasks')
-    slug_field = 'slug'  
-    slug_url_kwarg = 'task_slug' 
+    slug_field = 'slug'
+    slug_url_kwarg = 'task_slug'
     template_name = 'task_confirm_delete.html'
 
     def get_queryset(self):
@@ -70,8 +71,8 @@ class TaskUpdateStatusView(LoginRequiredMixin, UpdateView):
     template_name = 'update_task_status.html'
     fields = ['status', 'due_date']
     success_url = reverse_lazy('app:tasks')
-    slug_field = 'slug'  
-    slug_url_kwarg = 'task_slug'  
+    slug_field = 'slug'
+    slug_url_kwarg = 'task_slug'
 
     def get_queryset(self):
         return Task.objects.filter(created_by=self.request.user)
@@ -110,6 +111,44 @@ class TaskUpdateStatusView(LoginRequiredMixin, UpdateView):
         context['task'] = self.get_object()
         return context
 
+class TaskDetailView(LoginRequiredMixin, DetailView):
+    model = Task
+    slug_field = 'slug'
+    slug_url_kwarg = 'task_slug'
+    template_name = 'task_detail.html'
+
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)
+
+class TaskUpdateView(LoginRequiredMixin, UpdateView):
+    model = Task
+    form_class = TaskForm
+    slug_field = 'slug'
+    slug_url_kwarg = 'task_slug'
+    template_name = 'task_update.html'
+    success_url = reverse_lazy('app:tasks')
+
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        print(f"Raw POST data (Update): {request.POST}")
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        if not form.cleaned_data['title']:
+            form.add_error('title', 'Title is required')
+            return self.form_invalid(form)
+        print(f"Form cleaned_data (Update): {form.cleaned_data}")
+        task = form.save(commit=False)
+        due_date = form.cleaned_data.get('due_date')
+        if due_date:
+            task.due_date = due_date
+        print(f"Task due_date before save (Update): {task.due_date}")
+        task.save()
+        print(f"Task due_date after save (Update): {task.due_date}")
+        return super().form_valid(form)
+
 class RegisterView(FormView):
     template_name = 'registration/register.html'
     form_class = RegistrationForm
@@ -134,12 +173,3 @@ class RootRedirectView(RedirectView):
         if self.request.user.is_authenticated:
             return reverse_lazy('app:tasks')
         return reverse_lazy('app:login')
-    
-class TaskDetailView(LoginRequiredMixin, DetailView):
-    model = Task
-    slug_field = 'slug'
-    slug_url_kwarg = 'task_slug'
-    template_name = 'task_detail.html'
-
-    def get_queryset(self):
-        return Task.objects.filter(created_by=self.request.user)

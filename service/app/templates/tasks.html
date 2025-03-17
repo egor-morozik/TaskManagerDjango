@@ -34,6 +34,7 @@
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
                                 <a href="{% url 'app:task_detail' task_slug=task.slug %}" class="btn btn-info btn-sm">View Details</a>
+                                <a href="{% url 'app:task_update' task_slug=task.slug %}" class="btn btn-warning btn-sm">Edit</a>
                             </div>
                         </li>
                     {% endfor %}

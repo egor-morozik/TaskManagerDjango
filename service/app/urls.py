@@ -14,4 +14,5 @@ urlpatterns = [
     path('accounts/profile/', views.ProfileView.as_view(), name='profile'),
     path('update-task-status/<slug:task_slug>/', views.TaskUpdateStatusView.as_view(), name='update_task_status'),
     path('task/<slug:task_slug>/', views.TaskDetailView.as_view(), name='task_detail'),
+    path('update-task/<slug:task_slug>/', views.TaskUpdateView.as_view(), name='task_update'),
 ]
