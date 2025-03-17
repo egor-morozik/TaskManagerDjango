@@ -1,3 +1,4 @@
+/* styles.css */
 body {
     font-family: 'Roboto', sans-serif;
     background-color: #f8f9fa;
@@ -68,4 +69,30 @@ header {
 .form-control:focus, .form-select:focus {
     border-color: #3498db;
     box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.task-done {
+    opacity: 0.7; 
+}
+
+.task-title-done {
+    color: #7f8c8d; 
+    text-decoration: line-through; 
+}
+
+.task-description-done {
+    color: #7f8c8d;
+}
+
+.mark-complete {
+    transition: background-color 0.3s ease;
+}
+
+.mark-complete[data-status="DONE"] {
+    background-color: #7f8c8d; 
+}
+
+.mark-complete[data-status="TODO"],
+.mark-complete[data-status="IN_PROGRESS"] {
+    background-color: #28a745; 
 }

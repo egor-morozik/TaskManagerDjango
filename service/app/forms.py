@@ -2,9 +2,7 @@ from datetime import datetime
 from django import forms
 from django.contrib.auth.models import User
 from .models import Task
-from django import forms
-from .models import Task
-from datetime import datetime
+
 class RegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput)
 
@@ -33,7 +31,7 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ['title', 'description', 'status', 'due_date']
+        fields = ['title', 'description', 'due_date']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
