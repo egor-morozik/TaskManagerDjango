@@ -12,7 +12,12 @@
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
                                 <h5 class="mb-1">{{ task.title }}</h5>
-                                <p class="mb-1">{{ task.description }}</p>
+                                <p class="mb-1">
+                                    {{ task.description|truncatewords:20|default:"No description" }}
+                                    {% if task.description|wordcount > 20 %}
+                                        <a href="{% url 'app:task_detail' task_slug=task.slug %}" class="text-primary">... Read more</a>
+                                    {% endif %}
+                                </p>
                                 <small>Status: 
                                     <select class="task-status" data-task-slug="{{ task.slug }}">
                                         <option value="TODO" {% if task.status == 'TODO' %}selected{% endif %}>To Do</option>
@@ -28,6 +33,7 @@
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                 </form>
+                                <a href="{% url 'app:task_detail' task_slug=task.slug %}" class="btn btn-info btn-sm">View Details</a>
                             </div>
                         </li>
                     {% endfor %}

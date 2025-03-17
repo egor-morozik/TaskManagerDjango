@@ -1,5 +1,5 @@
 from django.shortcuts import redirect
-from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView, RedirectView
+from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView, RedirectView, DetailView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Task
@@ -134,3 +134,12 @@ class RootRedirectView(RedirectView):
         if self.request.user.is_authenticated:
             return reverse_lazy('app:tasks')
         return reverse_lazy('app:login')
+    
+class TaskDetailView(LoginRequiredMixin, DetailView):
+    model = Task
+    slug_field = 'slug'
+    slug_url_kwarg = 'task_slug'
+    template_name = 'task_detail.html'
+
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)

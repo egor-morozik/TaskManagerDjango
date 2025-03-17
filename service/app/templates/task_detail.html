@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm fade-in">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">{{ task.title }}</h2>
+                    <p><strong>Description:</strong> {{ task.description|default:"No description" }}</p>
+                    <p><strong>Status:</strong> {{ task.get_status_display }}</p>
+                    <p><strong>Due Date:</strong> {% if task.due_date %}{{ task.due_date|date:"Y-m-d H:i" }}{% else %}No due date{% endif %}</p>
+                    <p><strong>Created:</strong> {{ task.created_at|date:"Y-m-d H:i" }}</p>
+                    <a href="{% url 'app:tasks' %}" class="btn btn-secondary">Back to Tasks</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
