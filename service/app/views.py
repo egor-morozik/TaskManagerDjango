@@ -6,6 +6,7 @@ from .forms import RegistrationForm, TaskForm
 from datetime import datetime
 from django.http import JsonResponse
 import json
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 class TaskListView(LoginRequiredMixin, ListView):
     model = Task
@@ -18,6 +19,18 @@ class TaskListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
+        tasks = self.get_queryset()
+        paginator = Paginator(tasks, 5)  
+        page = self.request.GET.get('page')
+        try:
+            tasks_paginated = paginator.page(page)
+        except PageNotAnInteger:
+            tasks_paginated = paginator.page(1)
+        except EmptyPage:
+            tasks_paginated = paginator.page(paginator.num_pages)
+        context['tasks'] = tasks_paginated
+        context['paginator'] = paginator
+        context['page_obj'] = tasks_paginated
         return context
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
@@ -49,7 +62,7 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context['user'] = self.request.user
         return context
-    
+
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
     model = Task
     success_url = reverse_lazy('app:tasks')
@@ -69,7 +82,7 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
 class TaskUpdateStatusView(LoginRequiredMixin, UpdateView):
     model = Task
     template_name = 'update_task_status.html'
-    fields = ['status', 'due_date']
+    fields = ['due_date']
     success_url = reverse_lazy('app:tasks')
     slug_field = 'slug'
     slug_url_kwarg = 'task_slug'
@@ -79,28 +92,26 @@ class TaskUpdateStatusView(LoginRequiredMixin, UpdateView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            data = json.loads(request.body)
-            new_status = data.get('status')
-
-            if new_status not in [choice[0] for choice in Task._meta.get_field('status').choices]:
-                return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
-
-            self.object.status = new_status
-            self.object.save()
-            return JsonResponse({'success': True})
-
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            try:
+                data = json.loads(request.body)
+                new_status = data.get('status')
+                print(f"Received status: {new_status} for task: {self.object.slug}")
+                if new_status not in [choice[0] for choice in Task._meta.get_field('status').choices]:
+                    return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+                self.object.status = new_status
+                self.object.save()
+                print(f"Task {self.object.slug} updated to {new_status}")
+                return JsonResponse({'success': True})
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-        new_status = form.cleaned_data['status']
-        if new_status not in [choice[0] for choice in Task._meta.get_field('status').choices]:
-            form.add_error('status', 'Invalid status')
-            return self.form_invalid(form)
         due_date_str = self.request.POST.get('due_date')
         if due_date_str:
             try:
-                form.instance.due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
+                form.instance.due_date = datetime.strptime(due_date_str, '%Y-m-dT%H:%M')
             except ValueError:
                 form.add_error('due_date', 'Invalid date/time format')
                 return self.form_invalid(form)
