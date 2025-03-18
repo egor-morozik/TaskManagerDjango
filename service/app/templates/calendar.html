@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load task_tags %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <h2>Calendar</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <select id="month-select" class="form-select me-2" onchange="updateCalendar()">
+                                {% for m in months %}
+                                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m|month_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <select id="year-select" class="form-select me-2" onchange="updateCalendar()">
+                                {% for y in years %}
+                                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                            <h4 id="calendar-title">{{ month_name }} {{ year }}</h4>
+                        </div>
+                        <div>
+                            <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline-primary me-2">← Previous</a>
+                            <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline-primary">Next →</a>
+                        </div>
+                    </div>
+                    <table class="table table-bordered calendar-table">
+                        <thead>
+                            <tr>
+                                <th>Sun</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for week in calendar %}
+                                <tr>
+                                    {% for day in week %}
+                                        {% if day == 0 %}
+                                            <td class="text-muted"></td>
+                                        {% else %}
+                                            <td class="calendar-day {% if day in tasks_by_day %}has-tasks{% endif %} {% if day == current_date.day and month == current_date.month and year == current_date.year %}current-day{% endif %}" 
+                                                data-day="{{ day }}" 
+                                                data-task-count="{% if day in tasks_by_day %}{{ tasks_by_day|get_item:day|length }}{% else %}0{% endif %}"
+                                                {% if day in tasks_by_day %}
+                                                    data-bs-toggle="tooltip" 
+                                                    data-bs-html="true" 
+                                                    data-bs-placement="top" 
+                                                    title="{% for task in tasks_by_day|get_item:day %}<li><a href='{% url 'app:task_detail' task_slug=task.slug %}'>{{ task.title }} ({{ task.due_date }})</a></li>{% endfor %}"
+                                                {% endif %}>
+                                                <span class="day-number">{{ day }}</span>
+                                            </td>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Инициализация Bootstrap Tooltip
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltipTriggerList.forEach(tooltipTriggerEl => {
+                new bootstrap.Tooltip(tooltipTriggerEl, {
+                    html: true,
+                    customClass: 'task-tooltip'
+                });
+            });
+
+            // Обработка градиента
+            const daysWithTasks = document.querySelectorAll('td.has-tasks');
+            console.log("Found days with tasks:", daysWithTasks.length);
+
+            daysWithTasks.forEach(day => {
+                const taskCount = parseInt(day.getAttribute('data-task-count')) || 0;
+                console.log(`Day ${day.getAttribute('data-day')}: Task count = ${taskCount}`);
+
+                // Установка сплошного цвета на основе количества задач
+                const maxTasks = 5;
+                const ratio = Math.min(taskCount / maxTasks, 1); // Доля от максимального числа задач
+
+                // Интерполяция RGB от белого (#ffffff) к тёмно-синему (#00008B)
+                const r = Math.round(255 - (255 - 0) * ratio);    // Красный: от 255 до 0
+                const g = Math.round(255 - (255 - 0) * ratio);    // Зелёный: от 255 до 0
+                const b = Math.round(255 - (255 - 139) * ratio);  // Синий: от 255 до 139
+                const color = `rgb(${r}, ${g}, ${b})`;
+
+                day.style.backgroundColor = color; // Устанавливаем сплошной цвет
+                console.log(`Day ${day.getAttribute('data-day')}: Color = ${color}`);
+            });
+
+            // Обновление календаря при изменении месяца или года
+            function updateCalendar() {
+                const month = document.getElementById('month-select').value;
+                const year = document.getElementById('year-select').value;
+                window.location.href = `?year=${year}&month=${month}`;
+            }
+
+            // Обновление заголовка календаря
+            const monthSelect = document.getElementById('month-select');
+            const yearSelect = document.getElementById('year-select');
+            const calendarTitle = document.getElementById('calendar-title');
+            calendarTitle.textContent = `${monthSelect.options[monthSelect.selectedIndex].text} ${yearSelect.value}`;
+        });
+    </script>
+{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .calendar-table {
+            width: 100%;
+            text-align: center;
+            table-layout: fixed;
+        }
+
+        .calendar-table th, .calendar-table td {
+            padding: 10px;
+            position: relative;
+            width: 14.28%;
+            height: 80px;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+        }
+
+        .calendar-day {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day-number {
+            display: block;
+            position: relative;
+            z-index: 1;
+            color: #000; /* Убедимся, что текст читаем на любом фоне */
+        }
+
+        .has-tasks {
+            cursor: pointer;
+            transition: background-color 0.3s ease; /* Плавное изменение цвета */
+        }
+
+        .current-day {
+            background-color: #d4edda !important;
+            font-weight: bold;
+        }
+
+        /* Стили для Bootstrap Tooltip */
+        .task-tooltip .tooltip-inner {
+            background-color: #fff;
+            color: #000;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
+            max-width: 250px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: nowrap;
+        }
+
+        .task-tooltip .tooltip-inner ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .task-tooltip .tooltip-inner li {
+            margin-bottom: 5px;
+        }
+
+        .task-tooltip .tooltip-inner a {
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .task-tooltip .tooltip-inner a:hover {
+            text-decoration: underline;
+        }
+    </style>
+{% endblock %}

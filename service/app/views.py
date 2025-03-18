@@ -3,10 +3,11 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Task
 from .forms import RegistrationForm, TaskForm  
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+import calendar
 
 class TaskListView(LoginRequiredMixin, ListView):
     model = Task
@@ -215,3 +216,46 @@ class RootRedirectView(RedirectView):
         if self.request.user.is_authenticated:
             return reverse_lazy('app:tasks')
         return reverse_lazy('app:login')
+    
+class CalendarView(LoginRequiredMixin, TemplateView):
+    template_name = 'calendar.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        year = int(self.request.GET.get('year', datetime.now().year))
+        month = int(self.request.GET.get('month', datetime.now().month))
+        cal = calendar.monthcalendar(year, month)
+        tasks = self.request.user.tasks.filter(due_date__year=year, due_date__month=month)
+        tasks_by_day = {}
+        for task in tasks:
+            day = task.due_date.day
+            if day not in tasks_by_day:
+                tasks_by_day[day] = []
+            tasks_by_day[day].append({
+                'title': task.title,
+                'due_date': task.due_date.strftime('%H:%M'),
+                'slug': task.slug
+            })
+        for day in tasks_by_day:
+            tasks_by_day[day].sort(key=lambda x: x['due_date'])
+
+        prev_date = datetime(year, month, 1) - timedelta(days=1)
+        next_date = datetime(year, month, 1) + timedelta(days=31)
+
+        # Передаем списки месяцев и лет
+        context['months'] = range(1, 13)  # Список месяцев: 1, 2, ..., 12
+        context['years'] = range(2000, 2051)  # Список лет: 2000, 2001, ..., 2050
+
+        context['calendar'] = cal
+        context['year'] = year
+        context['month'] = month
+        context['month_name'] = calendar.month_name[month]
+        context['tasks_by_day'] = tasks_by_day
+        context['prev_year'] = prev_date.year
+        context['prev_month'] = prev_date.month
+        context['next_year'] = next_date.year
+        context['next_month'] = next_date.month
+        context['current_date'] = datetime.now().date()
+
+        return context

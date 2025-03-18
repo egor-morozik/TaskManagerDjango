@@ -9,6 +9,7 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(template_name='registration/logout.html'), name='logout'),
     path('tasks/', views.TaskListView.as_view(), name='tasks'),
+    path('calendar/', views.CalendarView.as_view(), name='calendar'),
     path('create-task/', views.TaskCreateView.as_view(), name='create_task'),
     path('delete-task/<slug:task_slug>/', views.TaskDeleteView.as_view(), name='delete_task'),
     path('accounts/profile/', views.ProfileView.as_view(), name='profile'),
