@@ -1,3 +1,4 @@
+from django.views import View
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView, DetailView, RedirectView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -111,48 +112,21 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
-class TaskUpdateStatusView(LoginRequiredMixin, UpdateView):
-    model = Task
-    template_name = 'update_task_status.html'
-    fields = ['due_date']
-    success_url = reverse_lazy('app:tasks')
-    slug_field = 'slug'
-    slug_url_kwarg = 'task_slug'
-
-    def get_queryset(self):
-        return Task.objects.filter(created_by=self.request.user)
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            try:
-                data = json.loads(request.body)
-                new_status = data.get('status')
-                print(f"Received status: {new_status} for task: {self.object.slug}")
-                if new_status not in [choice[0] for choice in Task._meta.get_field('status').choices]:
-                    return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
-                self.object.status = new_status
-                self.object.save()
-                print(f"Task {self.object.slug} updated to {new_status}")
-                return JsonResponse({'success': True})
-            except json.JSONDecodeError:
-                return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
-        return super().post(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        due_date_str = self.request.POST.get('due_date')
-        if due_date_str:
-            try:
-                form.instance.due_date = datetime.strptime(due_date_str, '%Y-m-dT%H:%M')
-            except ValueError:
-                form.add_error('due_date', 'Invalid date/time format')
-                return self.form_invalid(form)
-        return super().form_valid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['task'] = self.get_object()
-        return context
+class UpdateTaskStatusView(LoginRequiredMixin, View):
+    def post(self, request, task_slug):
+        try:
+            task = Task.objects.get(slug=task_slug, created_by=request.user)
+            data = json.loads(request.body)
+            new_status = data.get('status')
+            if new_status not in [choice[0] for choice in Task._meta.get_field('status').choices]:
+                return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+            task.status = new_status
+            task.save()
+            return JsonResponse({'success': True})
+        except Task.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Task not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
 
 class TaskDetailView(LoginRequiredMixin, DetailView):
     model = Task
