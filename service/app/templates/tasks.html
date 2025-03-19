@@ -27,7 +27,7 @@
                                 <option value="{{ current_date|date:'Y-m-d' }}" {% if search_date == current_date|date:'Y-m-d' %}selected{% endif %}>Today</option>
                                 <option value="custom" {% if search_date != 'all' and search_date != current_date|date:'Y-m-d' %}selected{% endif %}>Custom Date</option>
                             </select>
-                            <div id="custom-date-container" class="mt-2"></div> <!-- Контейнер для поля даты -->
+                            <div id="custom-date-container" class="mt-2"></div>
                         </div>
                         <div class="col-12 text-end">
                             <button type="button" class="btn btn-secondary" id="toggle-sort-order">Toggle Sort Order ({{ sort_order|upper }})</button>
@@ -107,8 +107,14 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const taskItems = document.querySelectorAll('.task-item');
+            taskItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.classList.add('visible');
+                }, index * 100);
+            });
+
             const buttons = document.querySelectorAll('.mark-complete');
-            console.log('Found buttons:', buttons.length);
 
             function getCookie(name) {
                 let cookieValue = null;
@@ -126,11 +132,9 @@
             }
 
             const csrftoken = getCookie('csrftoken');
-            console.log('CSRF Token:', csrftoken);
 
             buttons.forEach(button => {
                 button.addEventListener('click', function() {
-                    console.log('Button clicked for task:', this.dataset.taskSlug);
                     const taskSlug = this.dataset.taskSlug;
                     const currentStatus = this.dataset.status;
                     const newStatus = currentStatus === 'DONE' ? 'TODO' : 'DONE';
@@ -145,14 +149,12 @@
                         body: JSON.stringify({ status: newStatus })
                     })
                     .then(response => {
-                        console.log('Response status:', response.status);
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
                         }
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Response data:', data);
                         if (data.success) {
                             const taskItem = button.closest('.task-item');
                             const taskContent = taskItem.querySelector('.task-content');
@@ -175,7 +177,6 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Fetch error:', error);
                         alert('Error: ' + error);
                     });
                 });

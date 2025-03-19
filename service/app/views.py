@@ -233,3 +233,13 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         context['current_date'] = datetime.now().date()
 
         return context
+    
+from django.contrib.auth import logout
+from django.urls import reverse_lazy
+from django.views import View
+from django.shortcuts import redirect
+
+class LogoutView(View):
+    def post(self, request):
+        logout(request)
+        return redirect('app:login')
