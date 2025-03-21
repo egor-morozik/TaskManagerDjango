@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     buttons.forEach(button => {
         button.addEventListener('click', function() {
-            if (this.disabled) return; // Предотвращаем повторные клики
-            this.disabled = true; // Блокируем кнопку
+            if (this.disabled) return; 
+            this.disabled = true; 
 
             const taskSlug = this.dataset.taskSlug;
             const currentStatus = this.dataset.status;
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Error: ' + error);
             })
             .finally(() => {
-                this.disabled = false; // Разблокируем кнопку
+                this.disabled = false; 
             });
         });
     });

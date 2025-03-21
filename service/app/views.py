@@ -217,9 +217,8 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         prev_date = datetime(year, month, 1) - timedelta(days=1)
         next_date = datetime(year, month, 1) + timedelta(days=31)
 
-        # Передаем списки месяцев и лет
-        context['months'] = range(1, 13)  # Список месяцев: 1, 2, ..., 12
-        context['years'] = range(2000, 2051)  # Список лет: 2000, 2001, ..., 2050
+        context['months'] = range(1, 13) 
+        context['years'] = range(2000, 2051) 
 
         context['calendar'] = cal
         context['year'] = year

@@ -69,7 +69,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Инициализация Bootstrap Tooltip
+
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
             tooltipTriggerList.forEach(tooltipTriggerEl => {
                 new bootstrap.Tooltip(tooltipTriggerEl, {
@@ -78,7 +78,6 @@
                 });
             });
 
-            // Обработка градиента
             const daysWithTasks = document.querySelectorAll('td.has-tasks');
             console.log("Found days with tasks:", daysWithTasks.length);
 
@@ -86,28 +85,24 @@
                 const taskCount = parseInt(day.getAttribute('data-task-count')) || 0;
                 console.log(`Day ${day.getAttribute('data-day')}: Task count = ${taskCount}`);
 
-                // Установка сплошного цвета на основе количества задач
                 const maxTasks = 5;
-                const ratio = Math.min(taskCount / maxTasks, 1); // Доля от максимального числа задач
+                const ratio = Math.min(taskCount / maxTasks, 1); 
 
-                // Интерполяция RGB от белого (#ffffff) к тёмно-синему (#00008B)
-                const r = Math.round(255 - (255 - 0) * ratio);    // Красный: от 255 до 0
-                const g = Math.round(255 - (255 - 0) * ratio);    // Зелёный: от 255 до 0
-                const b = Math.round(255 - (255 - 139) * ratio);  // Синий: от 255 до 139
+                const r = Math.round(255 - (255 - 0) * ratio);   
+                const g = Math.round(255 - (255 - 0) * ratio);    
+                const b = Math.round(255 - (255 - 139) * ratio);  
                 const color = `rgb(${r}, ${g}, ${b})`;
 
-                day.style.backgroundColor = color; // Устанавливаем сплошной цвет
+                day.style.backgroundColor = color; 
                 console.log(`Day ${day.getAttribute('data-day')}: Color = ${color}`);
             });
 
-            // Обновление календаря при изменении месяца или года
             function updateCalendar() {
                 const month = document.getElementById('month-select').value;
                 const year = document.getElementById('year-select').value;
                 window.location.href = `?year=${year}&month=${month}`;
             }
 
-            // Обновление заголовка календаря
             const monthSelect = document.getElementById('month-select');
             const yearSelect = document.getElementById('year-select');
             const calendarTitle = document.getElementById('calendar-title');
@@ -142,12 +137,12 @@
             display: block;
             position: relative;
             z-index: 1;
-            color: #000; /* Убедимся, что текст читаем на любом фоне */
+            color: #000;
         }
 
         .has-tasks {
             cursor: pointer;
-            transition: background-color 0.3s ease; /* Плавное изменение цвета */
+            transition: background-color 0.3s ease; 
         }
 
         .current-day {
@@ -155,7 +150,6 @@
             font-weight: bold;
         }
 
-        /* Стили для Bootstrap Tooltip */
         .task-tooltip .tooltip-inner {
             background-color: #fff;
             color: #000;
