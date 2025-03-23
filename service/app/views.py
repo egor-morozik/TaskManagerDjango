@@ -2,6 +2,7 @@ from django.views import View
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView, FormView, TemplateView, DetailView, RedirectView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.cache import cache  # Импортируем кэш для работы с Redis
 from .models import Task
 from .forms import RegistrationForm, TaskForm  
 from datetime import datetime, timedelta
@@ -9,6 +10,11 @@ from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import calendar
+from django.contrib.auth import logout
+from django.urls import reverse_lazy
+from django.views import View
+from django.shortcuts import redirect
+
 
 class TaskListView(LoginRequiredMixin, ListView):
     model = Task
@@ -17,12 +23,19 @@ class TaskListView(LoginRequiredMixin, ListView):
     paginate_by = 5
 
     def get_queryset(self):
-        queryset = self.request.user.tasks.all()
-
         sort_by = self.request.GET.get('sort_by', 'due_date')
         sort_order = self.request.GET.get('sort_order', 'asc')
         search_title = self.request.GET.get('search_title', '').strip()
         search_date = self.request.GET.get('search_date', 'all')
+        page = self.request.GET.get('page', '1')
+
+        cache_key = f"task_list:user_{self.request.user.id}:sort_{sort_by}:{sort_order}:search_title_{search_title}:search_date_{search_date}:page_{page}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return cached_data
+
+        queryset = self.request.user.tasks.all()
 
         if search_title:
             queryset = queryset.filter(title__icontains=search_title)
@@ -38,6 +51,8 @@ class TaskListView(LoginRequiredMixin, ListView):
             queryset = queryset.order_by('title' if sort_order == 'asc' else '-title')
         elif sort_by == 'due_date':
             queryset = queryset.order_by('due_date' if sort_order == 'asc' else '-due_date')
+
+        cache.set(cache_key, queryset, timeout=600)
 
         return queryset
 
@@ -89,6 +104,11 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         print(f"Task due_date before save (Create): {task.due_date}")
         task.save()
         print(f"Task due_date after save (Create): {task.due_date}")
+
+        # Инвалидируем кэш для списка задач и календаря
+        cache.delete_pattern(f"task_list:user_{self.request.user.id}:*")
+        cache.delete_pattern(f"calendar:user_{self.request.user.id}:*")
+
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -110,6 +130,10 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        task = self.get_object()
+        cache.delete_pattern(f"task_list:user_{self.request.user.id}:*")
+        cache.delete(f"task_detail:user_{self.request.user.id}:slug_{task.slug}")
+        cache.delete_pattern(f"calendar:user_{self.request.user.id}:*")
         return super().post(request, *args, **kwargs)
 
 class UpdateTaskStatusView(LoginRequiredMixin, View):
@@ -122,6 +146,11 @@ class UpdateTaskStatusView(LoginRequiredMixin, View):
                 return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
             task.status = new_status
             task.save()
+
+            cache.delete_pattern(f"task_list:user_{self.request.user.id}:*")
+            cache.delete(f"task_detail:user_{self.request.user.id}:slug_{task.slug}")
+            cache.delete_pattern(f"calendar:user_{self.request.user.id}:*")
+
             return JsonResponse({'success': True})
         except Task.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Task not found'}, status=404)
@@ -133,6 +162,18 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     slug_field = 'slug'
     slug_url_kwarg = 'task_slug'
     template_name = 'task_detail.html'
+
+    def get_object(self, queryset=None):
+
+        cache_key = f"task_detail:user_{self.request.user.id}:slug_{self.kwargs['task_slug']}"
+        
+        task = cache.get(cache_key)
+        
+        if task is None:
+            task = super().get_object(queryset)
+            cache.set(cache_key, task, timeout=600)
+        
+        return task
 
     def get_queryset(self):
         return Task.objects.filter(created_by=self.request.user)
@@ -164,6 +205,11 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         print(f"Task due_date before save (Update): {task.due_date}")
         task.save()
         print(f"Task due_date after save (Update): {task.due_date}")
+
+        cache.delete_pattern(f"task_list:user_{self.request.user.id}:*")
+        cache.delete(f"task_detail:user_{self.request.user.id}:slug_{task.slug}")
+        cache.delete_pattern(f"calendar:user_{self.request.user.id}:*")
+
         return super().form_valid(form)
 
 class RegisterView(FormView):
@@ -199,6 +245,14 @@ class CalendarView(LoginRequiredMixin, TemplateView):
 
         year = int(self.request.GET.get('year', datetime.now().year))
         month = int(self.request.GET.get('month', datetime.now().month))
+
+        cache_key = f"calendar:user_{self.request.user.id}:year_{year}:month_{month}"
+        cached_data = cache.get(cache_key)
+
+        if cached_data is not None:
+            context.update(cached_data)
+            return context
+
         cal = calendar.monthcalendar(year, month)
         tasks = self.request.user.tasks.filter(due_date__year=year, due_date__month=month)
         tasks_by_day = {}
@@ -231,13 +285,10 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         context['next_month'] = next_date.month
         context['current_date'] = datetime.now().date()
 
+        cache.set(cache_key, context, timeout=600)
+
         return context
     
-from django.contrib.auth import logout
-from django.urls import reverse_lazy
-from django.views import View
-from django.shortcuts import redirect
-
 class LogoutView(View):
     def post(self, request):
         logout(request)
