@@ -1,47 +1,44 @@
 {% extends 'base.html' %}
-{% block title %}Edit Task{% endblock %}
+
 {% block content %}
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-4">
-            <div class="card shadow-sm fade-in">
-                <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Edit Task "{{ task.title }}"</h2>
-                    {% if form.errors %}
-                        <div class="alert alert-danger">
-                            {% for field, errors in form.errors.items %}
-                                {{ field }}: {{ errors|join:", " }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
-                            <input type="text" name="title" id="{{ form.title.id_for_label }}" class="form-control" value="{{ form.title.value|default_if_none:task.title }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                            <textarea name="description" id="{{ form.description.id_for_label }}" class="form-control">{{ form.description.value|default_if_none:task.description }}</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="{{ form.due_date.id_for_label }}" class="form-label">Due Date and Time</label>
-                            {{ form.due_date }}
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Save Changes</button>
-                    </form>
-                    <p class="text-center mt-3">
-                        <a href="{% url 'app:tasks' %}" class="btn btn-secondary">Back to Tasks</a>
-                    </p>
+<div class="container mt-5">
+    <h2>Edit Task "{{ object.title }}"</h2>
+
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ field }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}">Title</label>
+            <input type="text" name="{{ form.title.name }}" id="{{ form.title.id_for_label }}" value="{{ form.title.value|default_if_none:'' }}" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" class="form-control">{{ form.description.value|default_if_none:'' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Due Date and Time</label>
+            <div class="row">
+                <div class="col">
+                    <input type="date" name="{{ form.due_date.name }}" id="{{ form.due_date.id_for_label }}" value="{{ form.due_date.value|date:'Y-m-d'|default_if_none:'' }}" class="form-control">
+                </div>
+                <div class="col">
+                    <input type="time" name="{{ form.due_time.name }}" id="{{ form.due_time.id_for_label }}" value="{{ form.due_time.value|time:'H:i'|default_if_none:'' }}" class="form-control">
                 </div>
             </div>
         </div>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const fadeInElements = document.querySelectorAll('.fade-in');
-            fadeInElements.forEach(element => {
-                element.classList.add('visible');
-            });
-        });
-    </script>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'app:tasks' %}" class="btn btn-secondary">Back to Tasks</a>
+    </form>
+</div>
 {% endblock %}

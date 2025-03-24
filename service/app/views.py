@@ -98,14 +98,12 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
             return self.form_invalid(form)
         print(f"Form cleaned_data (Create): {form.cleaned_data}")
         task = form.save(commit=False)
-        due_date = form.cleaned_data.get('due_date')
-        if due_date:
-            task.due_date = due_date
+
+        task.due_date = form.cleaned_data.get('due_date')  
         print(f"Task due_date before save (Create): {task.due_date}")
         task.save()
         print(f"Task due_date after save (Create): {task.due_date}")
 
-        # Инвалидируем кэш для списка задач и календаря
         cache.delete_pattern(f"task_list:user_{self.request.user.id}:*")
         cache.delete_pattern(f"calendar:user_{self.request.user.id}:*")
 
@@ -199,9 +197,8 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             return self.form_invalid(form)
         print(f"Form cleaned_data (Update): {form.cleaned_data}")
         task = form.save(commit=False)
-        due_date = form.cleaned_data.get('due_date')
-        if due_date:
-            task.due_date = due_date
+        
+        task.due_date = form.cleaned_data.get('due_date') 
         print(f"Task due_date before save (Update): {task.due_date}")
         task.save()
         print(f"Task due_date after save (Update): {task.due_date}")
@@ -211,6 +208,14 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         cache.delete_pattern(f"calendar:user_{self.request.user.id}:*")
 
         return super().form_valid(form)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        task = self.get_object()
+        if task.due_date:
+            initial['due_date'] = task.due_date.date()
+            initial['due_time'] = task.due_date.time()
+        return initial
 
 class RegisterView(FormView):
     template_name = 'registration/register.html'
@@ -246,7 +251,6 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         year = int(self.request.GET.get('year', datetime.now().year))
         month = int(self.request.GET.get('month', datetime.now().month))
 
-        # Кэшируем только tasks_by_day
         cache_key = f"calendar:user_{self.request.user.id}:year_{year}:month_{month}"
         tasks_by_day = cache.get(cache_key)
 
@@ -264,7 +268,6 @@ class CalendarView(LoginRequiredMixin, TemplateView):
                 })
             for day in tasks_by_day:
                 tasks_by_day[day].sort(key=lambda x: x['due_date'])
-            # Сохраняем только tasks_by_day в кэш
             cache.set(cache_key, tasks_by_day, timeout=600)
 
         cal = calendar.monthcalendar(year, month)
