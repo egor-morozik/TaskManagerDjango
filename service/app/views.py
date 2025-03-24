@@ -246,34 +246,33 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         year = int(self.request.GET.get('year', datetime.now().year))
         month = int(self.request.GET.get('month', datetime.now().month))
 
+        # Кэшируем только tasks_by_day
         cache_key = f"calendar:user_{self.request.user.id}:year_{year}:month_{month}"
-        cached_data = cache.get(cache_key)
+        tasks_by_day = cache.get(cache_key)
 
-        if cached_data is not None:
-            context.update(cached_data)
-            return context
+        if tasks_by_day is None:
+            tasks = self.request.user.tasks.filter(due_date__year=year, due_date__month=month)
+            tasks_by_day = {}
+            for task in tasks:
+                day = task.due_date.day
+                if day not in tasks_by_day:
+                    tasks_by_day[day] = []
+                tasks_by_day[day].append({
+                    'title': task.title,
+                    'due_date': task.due_date.strftime('%H:%M'),
+                    'slug': task.slug
+                })
+            for day in tasks_by_day:
+                tasks_by_day[day].sort(key=lambda x: x['due_date'])
+            # Сохраняем только tasks_by_day в кэш
+            cache.set(cache_key, tasks_by_day, timeout=600)
 
         cal = calendar.monthcalendar(year, month)
-        tasks = self.request.user.tasks.filter(due_date__year=year, due_date__month=month)
-        tasks_by_day = {}
-        for task in tasks:
-            day = task.due_date.day
-            if day not in tasks_by_day:
-                tasks_by_day[day] = []
-            tasks_by_day[day].append({
-                'title': task.title,
-                'due_date': task.due_date.strftime('%H:%M'),
-                'slug': task.slug
-            })
-        for day in tasks_by_day:
-            tasks_by_day[day].sort(key=lambda x: x['due_date'])
-
         prev_date = datetime(year, month, 1) - timedelta(days=1)
         next_date = datetime(year, month, 1) + timedelta(days=31)
 
         context['months'] = range(1, 13) 
         context['years'] = range(2000, 2051) 
-
         context['calendar'] = cal
         context['year'] = year
         context['month'] = month
@@ -285,11 +284,4 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         context['next_month'] = next_date.month
         context['current_date'] = datetime.now().date()
 
-        cache.set(cache_key, context, timeout=600)
-
         return context
-    
-class LogoutView(View):
-    def post(self, request):
-        logout(request)
-        return redirect('app:login')
